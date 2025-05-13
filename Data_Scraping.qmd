@@ -34,12 +34,13 @@ To begin, we manually scrape the Major League Soccer (MLS) stats page using rves
 Once we confirm the correct table is loaded (in this case, table 5), we clean it by promoting the first row to column headers, standardizing names, and parsing numeric columns. This results in a tidy dataset ready for analysis.
 
 ```{r}
-library(rvest)
-library(janitor)
 library(dplyr)
+library(ggthemes)
+library(janitor)
 library(purrr)
-library(stringr)
 library(readr)
+library(rvest)
+library(stringr)
 
 # Check permissions for the specific stats page
 robotstxt::paths_allowed("https://fbref.com/en/comps/22/Major-League-Soccer-Stats")
@@ -126,6 +127,13 @@ squad_tables$Premier_League
 squad_tables$La_Liga
 squad_tables$Bundesliga
 squad_tables$Serie_A
+
+# Bind each into a single tibble
+league_names <- c("MLS East", "MLS WEST", "Premier League", "La Liga", "Bundesliga", "Serie A")
+
+squads <- bind_rows(squad_tables) |> select(21, 1:20)
+
+squads
 ```
 
 # Scraping and Cleaning Soccer League Standings from FBref
@@ -193,4 +201,64 @@ standings_tables$Premier_League
 standings_tables$La_Liga
 standings_tables$Bundesliga
 standings_tables$Serie_A
+
+# Combine leagues into a single tibble
+standings <-
+	bind_rows(standings_tables, .id = "league") |> 
+	mutate(league = league_names[as.integer(league)])
+
+standings
+```
+
+```{r}
+squads_augmented <- squads |>
+	mutate(league = ifelse(league == "La_Liga", "La Liga",
+									ifelse(league == "Premier_League", "Premier League",
+									ifelse(league == "Serie_A", "Serie A",
+																							league))),
+				 goals_per_game = gls / mp,
+				 assist_rate = ast / gls,
+				 discipline_score = crd_y + 2 * crd_r,
+				 min_per_player = min / number_pl)
+
+squads_augmented
+```
+
+```{r}
+squads_augmented |> 
+	ggplot() +
+	geom_point(aes(x = age, y = gls, color = league, shape = league), size = 3) +
+	labs(title = "Team Average Age vs. Goals by League",
+			 x = "Average Age",
+			 y = "Goals",
+			 color = "League",
+			 shape = "League") +
+	scale_color_colorblind()
+```
+
+```{r}
+squads_augmented |> 
+	ggplot() +
+	geom_point(aes(x = poss, y = gls, color = league), size = 2, show.legend = F) +
+	facet_wrap(~league) +
+	labs(title = "Possession vs. Goals by League",
+			 x = "Possession",
+			 y = "Goals") +
+	scale_color_colorblind()
+```
+
+```{r}
+squads_augmented |>
+	group_by(league) |> 
+	slice_max(goals_per_game, n = 5) |> 
+	ggplot() +
+	geom_col(aes(x = fct_reorder(squad, goals_per_game),
+							 y = goals_per_game,
+							 fill = league)) +
+	labs(title = "Top 5 Teams by Goals per Game by League",
+			 x = "Squad",
+			 y = "Goals per Game",
+			 fill = "League") +
+	coord_flip() +
+	scale_fill_colorblind()
 ```
