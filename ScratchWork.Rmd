@@ -1,0 +1,184 @@
+---
+title: "Scratch Work"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r Libraries}
+library(dplyr)
+library(ggthemes)
+library(janitor)
+library(polite)
+library(purrr)
+library(readr)
+library(rvest)
+library(stringr)
+library(tidyverse)
+```
+
+## Introduction
+
+In this project, we explored soccer statistics from multiple professional football leagues using data from FBref (https://fbref.com/en/comps/22/Major-League-Soccer-Stats), a trusted site for advanced football analytics. While we initially focused on Major League Soccer (MLS), we extended our analysis to include other major international competitions such as the Premier League, La Liga, Bundesliga, and Serie A.
+
+Our goal was to collect and organize standardized squad-level statistics across leagues to support comparative analysis. Specifically, we targeted the "Squad Standard Stats" tables on each competition’s main stats page. These tables contain information on team performance metrics such as matches played, goals, assists, average age, possession %, and more.
+
+## Motivation
+
+We chose this dataset primarily out of personal interest: one of us enjoys following global football news, while the other is an avid FC25 player. Beyond our curiosity, we recognized that this data offers a rich opportunity for cross-league comparisons.
+
+By scraping the same type of statistics from each league, we aimed to answer questions such as:
+
+-   Do older squads tend to score more or less?
+-   Is there a relationship between average age and possession percentage?
+-   How does team performance (e.g., goals, assists) vary across leagues?
+
+These questions open the door for future data visualizations (like scatterplots or heatmaps) and statistical modeling (e.g., regression of goals on age or possession).
+
+To acquire the data, we used a custom scraping function along with an iteration technique (pmap) to systematically collect comparable squad stats from each league's respective webpage. This ensures consistency while handling slight variations in webpage structure — such as differing table positions.
+
+## Scraping the “Squad Standard Stats” table:
+
+To begin, we manually scrape the Major League Soccer (MLS) stats page using rvest. This allows us to locate and inspect the structure of all tables on the page, which helps identify the correct table containing squad-level statistics.
+
+Once we confirm the correct table is loaded (in this case, table 5), we clean it by promoting the first row to column headers, standardizing names, and parsing numeric columns. This results in a tidy dataset ready for analysis.
+
+## Creating a Custom Web Scraping Function:
+
+Next, we generalize this scraping process by writing a custom function called scrape_fbref_table(). This function takes in a URL and table number and performs all the cleaning steps automatically. We use it to easily scrape multiple pages later on.
+
+## Iterating Over Multiple Competitions
+
+We used purrr::pmap() to iterate over multiple variables — specifically, league URLs, the table numbers containing the "Squad Standard Stats" table for each competition, and the league names. This allowed us to apply our custom scraping function across multiple soccer leagues, each with its own unique webpage and table structure. This approach demonstrates how iteration over multiple inputs can automate the data collection process across structured but inconsistent sources.
+
+## Scraping and Cleaning Soccer League Standings from FBref
+
+To complement the squad-level performance data, we also scraped league standings tables from FBref to provide contextual insight into how teams performed in their respective competitions. We created a custom function, scrape_fbref_standings(), which extracts a specified table from a given webpage, cleans the column names, and retains only the first 15 columns for consistency.
+
+We applied this function to gather standings from six major competitions:
+
+- The Eastern and Western Conferences of Major League Soccer (MLS)
+- The top-level leagues in England (Premier League), Spain (La Liga), Germany (Bundesliga), and Italy (Serie A)
+
+Each table was stored in a named list object, standings_tables, which allows for easy access and comparison across leagues. This standardized pipeline streamlines the collection of structured data from multiple sources and ensures that the resulting tables are tidy and analysis-ready. These standings data can be used in conjunction with squad-level statistics to explore broader questions about performance efficiency, league competitiveness, and team success metrics.
+
+```{r Initial Information}
+# For mapping use in scraping multiple data from multiple leagues
+squad_leagues <- tibble::tibble(
+	league = c("Bundesliga", "La Liga", "MLS", "Premier League", "Serie A"),
+	# Each league link is almost identical, with a unique number at the end
+	url_number = c(20, 12, 22, 9, 11),
+	table_num = c(3, 3, 5, 3, 3) # Identifies where the table of interest is
+)
+
+# Same as above but for standings instead of squad statistics
+standings_leagues <- tibble::tibble(
+	league = c("Bundesliga", "La Liga", "MLS East",
+						 "MLS West", "Premier League", "Serie A"),
+	url_number = c(20, 12, 22, 22, 9, 11),
+	table_num = c(1, 1, 1, 3, 1, 1)
+)
+```
+
+```{r Custom Scrape Function}
+scrape_fbref_table <-
+	function(url_number, table_number, n_cols = 20, p_cols = 2) {
+		# Every link starts the same, with a unique
+		# number at the end corresponding to the league
+		session <- bow(paste("https://fbref.com/en/comps/", url_number, sep = ""))
+		
+		# We are interested in just the tables, which contain data
+		all_tables <- scrape(session) |> 
+			html_nodes(css = "table") |> 
+			html_table(fill = TRUE)
+		
+		# Specifically interested in just one table at a time
+		clean_table <- all_tables[[table_number]]
+		
+		# Annoyingly, the very first table of MLS will be scraped in completely
+		# tidy, but nothing else, so we have to check whether the column names
+		# are tidy yet, and if not, then tidy it
+		if (names(all_tables[[table_number]])[1] == "") {
+			clean_table <- clean_table |> 
+				row_to_names(1) |> 
+				clean_names() |> 
+				select(all_of(1:n_cols)) |> 
+				mutate(across(all_of(p_cols:n_cols), parse_number))
+		}
+	
+		return(clean_table)
+	}
+```
+
+```{r Scrape Squad Standard Stats}
+# Map each league's url number and table of interest to the scrape function
+# then bind all resulting tables' rows together into a single tibble
+squads <- bind_rows(
+	pmap(
+		list(squad_leagues$url_number, squad_leagues$table_num),
+		scrape_fbref_table
+	),
+	.id = "league"
+) |> mutate(league = squad_leagues$league[as.integer(league)])
+# Finish with replacing the identifier column with actual league names
+```
+
+```{r Squad Standard Stats Augmentation}
+# Calculate some extra variables
+squads <- squads |> 
+	mutate(goals_per_game = gls / mp,
+				 assist_rate = ast / gls,
+				 discipline_score = crd_y + 2 * crd_r,
+				 min_per_player = min / number_pl)
+```
+
+```{r Scrape Standings Stats}
+# Same deal as squads but for standings instead
+standings <- bind_rows(
+	pmap(
+		list(standings_leagues$url_number, standings_leagues$table_num, replicate(6, 15), replicate(6, 3)),
+		scrape_fbref_table
+	),
+	.id = "league"
+) |> mutate(league = standings_leagues$league[as.integer(league)])
+```
+
+```{r Avg Age vs Goals}
+squads |> 
+	ggplot() +
+		geom_point(aes(x = age, y = gls, color = league, shape = league), size = 3) +
+		labs(title = "Team Average Age vs. Goals by League",
+		x = "Average Age",
+		y = "Goals",
+		color = "League",
+		shape = "League") +
+		scale_color_colorblind()
+```
+
+```{r Poss vs Goals}
+squads |> 
+	ggplot() +
+		geom_point(aes(x = poss, y = gls, color = league), size = 2, show.legend = F) +
+		facet_wrap(~league) +
+		labs(title = "Possession vs. Goals by League",
+		x = "Possession",
+		y = "Goals") +
+		scale_color_colorblind()
+```
+
+```{r Top Goals per Game Teams}
+squads |>
+	group_by(league) |> 
+		slice_max(goals_per_game, n = 5) |> 
+		ggplot() +
+		geom_col(aes(x = fct_reorder(squad, goals_per_game),
+		y = goals_per_game,
+		fill = league)) +
+		labs(title = "Top 5 Teams by Goals per Game by League",
+		x = "Squad",
+		y = "Goals per Game",
+		fill = "League") +
+		coord_flip() +
+		scale_fill_colorblind()
+```
+

@@ -40,63 +40,85 @@ By scraping the same type of statistics from each league, we aimed to answer que
 
 These questions open the door for future data visualizations (like scatterplots or heatmaps) and statistical modeling (e.g., regression of goals on age or possession).
 
-```{r Scrape Function}
-# Custom Function
-scrape_fbref_table <- function(url, table_number = 5, n_cols = 20) {
-  page <- read_html(url)
-  tables <- html_nodes(page, "table")
-  raw_table <- html_table(tables, fill = TRUE)[[table_number]]
-  
-  cleaned_table <- raw_table |>
-    row_to_names(row_number = 1) |>
-    clean_names() |>
-    select(1:n_cols) |>
-    filter(squad != "Squad") |>
-    mutate(across(all_of(2:n_cols), parse_number))
-  
-  return(cleaned_table)
-}
+```{r Initial Information}
+# For mapping use in scraping multiple data from multiple leagues
+squad_leagues <- tibble::tibble(
+	league = c("Bundesliga", "La Liga", "MLS", "Premier League", "Serie A"),
+	# Each league link is almost identical, with a unique number at the end
+	url_number = c(20, 12, 22, 9, 11),
+	table_num = c(3, 3, 5, 3, 3) # Identifies where the table of interest is
+)
+
+# Same as above but for standings instead of squad statistics
+standings_leagues <- tibble::tibble(
+	league = c("Bundesliga", "La Liga", "MLS East",
+						 "MLS West", "Premier League", "Serie A"),
+	url_number = c(20, 12, 22, 22, 9, 11),
+	table_num = c(1, 1, 1, 3, 1, 1)
+)
 ```
 
-```{r Scrape Squad Statistics}
-# Step 1: Define league names, URLs, and their specific table numbers
-leagues <- tibble::tibble(
-  league = c("MLS", "Premier_League", "La_Liga", "Bundesliga", "Serie_A"),
-  url = c(
-    "https://fbref.com/en/comps/22/Major-League-Soccer-Stats",
-    "https://fbref.com/en/comps/9/Premier-League-Stats",
-    "https://fbref.com/en/comps/12/La-Liga-Stats",
-    "https://fbref.com/en/comps/20/Bundesliga-Stats",
-    "https://fbref.com/en/comps/11/Serie-A-Stats"
-  ),
-  table_number = c(5, 3, 3, 3, 3)  # Specify table index for each league
-)
+```{r Custom Scrape Function}
+scrape_fbref_table <-
+	function(url_number, table_number, n_cols = 20, p_cols = 2) {
+		# Every link starts the same, with a unique
+		# number at the end corresponding to the league
+		session <- bow(paste("https://fbref.com/en/comps/", url_number, sep = ""))
+		
+		# We are interested in just the tables, which contain data
+		all_tables <- scrape(session) |> 
+			html_nodes(css = "table") |> 
+			html_table(fill = TRUE)
+		
+		# Specifically interested in just one table at a time
+		clean_table <- all_tables[[table_number]]
+		
+		# Annoyingly, the very first table of MLS will be scraped in completely
+		# tidy, but nothing else, so we have to check whether the column names
+		# are tidy yet, and if not, then tidy it
+		if (names(all_tables[[table_number]])[1] == "") {
+			clean_table <- clean_table |> 
+				row_to_names(1) |> 
+				clean_names() |> 
+				select(all_of(1:n_cols)) |> 
+				mutate(across(all_of(p_cols:n_cols), parse_number))
+		}
+	
+		return(clean_table)
+	}
+```
 
-# Step 2: Scrape each league using map3 to pass 3 arguments
-squad_tables <- pmap(
-  list(leagues$url, leagues$table_number, leagues$league),
-  function(url, table_num, league_name) {
-    scrape_fbref_table(url, table_number = table_num) |> 
-      mutate(league = league_name)  # Optionally tag league in each table
-  }
-)
+```{r Scrape Squad Standard Stats}
+# Map each league's url number and table of interest to the scrape function
+# then bind all resulting tables' rows together into a single tibble
+squads <- bind_rows(
+	pmap(
+		list(squad_leagues$url_number, squad_leagues$table_num),
+		scrape_fbref_table
+	),
+	.id = "league"
+) |> mutate(league = squad_leagues$league[as.integer(league)])
+# Finish with replacing the identifier column with actual league names
+```
 
-# Step 3: Name each list entry by league
-names(squad_tables) <- leagues$league
-
-# Bind each into a single tibble, tidy league values, and calculate a few additional variables
-league_names <- c("MLS East", "MLS WEST", "Premier League", "La Liga", "Bundesliga", "Serie A")
-
-squads <- bind_rows(squad_tables) |>
-	select(21, 1:20) |>
-	mutate(league = ifelse(league == "La_Liga", "La Liga",
-									ifelse(league == "Premier_League", "Premier League",
-									ifelse(league == "Serie_A", "Serie A",
-																							league))),
-				 goals_per_game = gls / mp,
+```{r Squad Standard Stats Augmentation}
+# Calculate some extra variables
+squads <- squads |> 
+	mutate(goals_per_game = gls / mp,
 				 assist_rate = ast / gls,
 				 discipline_score = crd_y + 2 * crd_r,
 				 min_per_player = min / number_pl)
+```
+
+```{r Scrape Standings Stats}
+# Same deal as squads but for standings instead
+standings <- bind_rows(
+	pmap(
+		list(standings_leagues$url_number, standings_leagues$table_num, replicate(6, 15), replicate(6, 3)),
+		scrape_fbref_table
+	),
+	.id = "league"
+) |> mutate(league = standings_leagues$league[as.integer(league)])
 ```
 
 ## Plots
