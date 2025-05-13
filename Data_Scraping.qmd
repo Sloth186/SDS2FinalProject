@@ -41,6 +41,7 @@ library(purrr)
 library(readr)
 library(rvest)
 library(stringr)
+library(tidyverse)
 
 # Check permissions for the specific stats page
 robotstxt::paths_allowed("https://fbref.com/en/comps/22/Major-League-Soccer-Stats")
@@ -204,8 +205,7 @@ standings_tables$Serie_A
 
 # Combine leagues into a single tibble
 standings <-
-	bind_rows(standings_tables, .id = "league") |> 
-	mutate(league = league_names[as.integer(league)])
+	bind_rows(standings_tables, .id = "league")
 
 standings
 ```

@@ -6,6 +6,142 @@ output: html_document
 runtime: shiny
 ---
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+```{r Setup, include = FALSE}
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
+```
+
+```{r Libraries}
+library(dplyr)
+library(ggthemes)
+library(janitor)
+library(polite)
+library(purrr)
+library(readr)
+library(rvest)
+library(stringr)
+library(tidyverse)
+```
+
+## Introduction
+
+In this project, we explore soccer statistics from multiple professional football leagues using data from FBref (https://fbref.com/en/comps), a trusted site for advanced football analytics. While we initially focused on Major League Soccer (MLS), we extended our analysis to include other major international competitions such as the Premier League, La Liga, Bundesliga, and Serie A.
+
+Our goal was to collect and organize standardized squad-level statistics across leagues to support comparative analysis. Specifically, we targeted the "Squad Standard Stats" tables on each competition’s main stats page. These tables contain information on team performance metrics such as matches played, goals, assists, average age, possession %, and more.
+
+## Motivation
+
+We chose this dataset primarily out of personal interest: one of us enjoys following global football news, while the other is an avid FC25 player. Beyond our curiosity, we recognized that this data offers a rich opportunity for cross-league comparisons.
+
+By scraping the same type of statistics from each league, we aimed to answer questions such as:
+
+-   Do older squads tend to score more or less?
+-   Is there a relationship between average age and possession percentage?
+-   How does team performance (e.g., goals, assists) vary across leagues?
+
+These questions open the door for future data visualizations (like scatterplots or heatmaps) and statistical modeling (e.g., regression of goals on age or possession).
+
+```{r Scrape Function}
+# Custom Function
+scrape_fbref_table <- function(url, table_number = 5, n_cols = 20) {
+  page <- read_html(url)
+  tables <- html_nodes(page, "table")
+  raw_table <- html_table(tables, fill = TRUE)[[table_number]]
+  
+  cleaned_table <- raw_table |>
+    row_to_names(row_number = 1) |>
+    clean_names() |>
+    select(1:n_cols) |>
+    filter(squad != "Squad") |>
+    mutate(across(all_of(2:n_cols), parse_number))
+  
+  return(cleaned_table)
+}
+```
+
+```{r Scrape Squad Statistics}
+# Step 1: Define league names, URLs, and their specific table numbers
+leagues <- tibble::tibble(
+  league = c("MLS", "Premier_League", "La_Liga", "Bundesliga", "Serie_A"),
+  url = c(
+    "https://fbref.com/en/comps/22/Major-League-Soccer-Stats",
+    "https://fbref.com/en/comps/9/Premier-League-Stats",
+    "https://fbref.com/en/comps/12/La-Liga-Stats",
+    "https://fbref.com/en/comps/20/Bundesliga-Stats",
+    "https://fbref.com/en/comps/11/Serie-A-Stats"
+  ),
+  table_number = c(5, 3, 3, 3, 3)  # Specify table index for each league
+)
+
+# Step 2: Scrape each league using map3 to pass 3 arguments
+squad_tables <- pmap(
+  list(leagues$url, leagues$table_number, leagues$league),
+  function(url, table_num, league_name) {
+    scrape_fbref_table(url, table_number = table_num) |> 
+      mutate(league = league_name)  # Optionally tag league in each table
+  }
+)
+
+# Step 3: Name each list entry by league
+names(squad_tables) <- leagues$league
+
+# Bind each into a single tibble, tidy league values, and calculate a few additional variables
+league_names <- c("MLS East", "MLS WEST", "Premier League", "La Liga", "Bundesliga", "Serie A")
+
+squads <- bind_rows(squad_tables) |>
+	select(21, 1:20) |>
+	mutate(league = ifelse(league == "La_Liga", "La Liga",
+									ifelse(league == "Premier_League", "Premier League",
+									ifelse(league == "Serie_A", "Serie A",
+																							league))),
+				 goals_per_game = gls / mp,
+				 assist_rate = ast / gls,
+				 discipline_score = crd_y + 2 * crd_r,
+				 min_per_player = min / number_pl)
+```
+
+## Plots
+
+```{r Avg Age vs Goals}
+renderPlot({
+	squads |> 
+		ggplot() +
+			geom_point(aes(x = age, y = gls, color = league, shape = league), size = 3) +
+			labs(title = "Team Average Age vs. Goals by League",
+					 x = "Average Age",
+					 y = "Goals",
+					 color = "League",
+					 shape = "League") +
+			scale_color_colorblind()
+})
+```
+
+```{r Possession vs Goals}
+renderPlot({
+	squads |> 
+		ggplot() +
+			geom_point(aes(x = poss, y = gls, color = league), size = 2, show.legend = F) +
+			facet_wrap(~league) +
+			labs(title = "Possession vs. Goals by League",
+					 x = "Possession",
+					 y = "Goals") +
+			scale_color_colorblind()
+})
+```
+
+```{r Top Teams Goals per Game}
+renderPlot({
+	squads |>
+		group_by(league) |> 
+		slice_max(goals_per_game, n = 5) |> 
+		ggplot() +
+			geom_col(aes(x = fct_reorder(squad, goals_per_game),
+									 y = goals_per_game,
+									 fill = league)) +
+			labs(title = "Top 5 Teams by Goals per Game by League",
+					 x = "Squad",
+					 y = "Goals per Game",
+					 fill = "League") +
+			coord_flip() +
+			scale_fill_colorblind()
+})
 ```
