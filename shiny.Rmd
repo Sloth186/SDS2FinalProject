@@ -121,6 +121,14 @@ standings <- bind_rows(
 ) |> mutate(league = standings_leagues$league[as.integer(league)])
 ```
 
+```{r}
+# Save the augmented squads dataset
+write_csv(squads, "squads.csv")
+
+# Save the scraped standings dataset
+write_csv(standings, "standings.csv")
+```
+
 ## Plots
 
 ```{r Avg Age vs Goals}
