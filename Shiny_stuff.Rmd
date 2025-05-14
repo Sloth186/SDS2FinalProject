@@ -57,36 +57,52 @@ We chose this dataset primarily out of personal interest: one of us enjoys follo
 
 By scraping the same type of statistics from each league, we aimed to answer questions such as:
 
--   Do older squads tend to score more or less?
--   Is there a relationship between average age and possession percentage?
--   How does team performance (e.g., goals, assists) vary across leagues?
+- Do older squads tend to score more goals, or is it the opposite? 
+- Which leagues exhibit the highest goal efficiency? 
+- Do teams with a higher discipline score tend to have fewer goals conceded? 
+- Have teams overperformed or underperformed according to the expected stats?  
+- Do possession-heavy teams always score more? 
+
 
 These questions open the door for future data visualizations (like scatterplots or heatmaps) and statistical modeling (e.g., regression of goals on age or possession).
 
 Column {data-width=600}
 -------------------------
 
-```{r league-image, echo=FALSE}
+```{r league-image1, echo=FALSE}
 renderImage({
   list(
-    src    = "Big_five.jpg",
-    alt    = "Big Five League Logos",
+    src    = "Top_2 .png",
+    alt    = "Top 2 League Logos",
     width  = 600,
-    height = 400
+    height = 200
   )
 })
 ```
 
-```{r MLS-image, echo=FALSE}
+```{r league-image2, echo=FALSE}
 renderImage({
   list(
-    src    = "MLS_logo.png",
-    alt    = "MLS Logo",
+    src    = "Top_4.png",
+    alt    = "Top 4 League Logos",
     width  = 600,
-    height = 600
+    height = 300
   )
 })
 ```
+
+<div style="text-align: center;">
+```{r MLS-image, echo=FALSE}
+renderImage({
+  list(
+    src    = "MLS.png",
+    alt    = "MLS Logo",
+    width  = 300,
+    height = 300
+  )
+})
+```
+</div>
 
 Standings 
 ==========================
@@ -131,14 +147,18 @@ Column {data-width=400}
 
 ```{r Possession vs Goals}
 renderPlot({
-	squads |> 
-		ggplot() +
-			geom_point(aes(x = poss, y = gls, color = league), size = 2, show.legend = F) +
-			facet_wrap(~league) +
-			labs(title = "Possession vs. Goals by League",
-					 x = "Possession",
-					 y = "Goals") +
-			scale_color_colorblind()
+  squads |>
+    ggplot(aes(x = poss, y = gls, color = league)) +
+    geom_point(size = 2, alpha = 0.8) +
+    geom_smooth(method = "lm", se = FALSE) +
+    labs(
+      title = "Possession vs. Goals by League with Trend Lines",
+      x = "Possession (%)",
+      y = "Goals",
+      color = "League"
+    ) +
+    scale_color_colorblind() +
+    theme_minimal()
 })
 ```
 
@@ -162,6 +182,26 @@ renderPlot({
 					 fill = "League") +
 			coord_flip() +
 			scale_fill_colorblind()
+})
+```
+
+Column {data-width=400}
+-------------------------
+
+### Discipline vs. Goals Conceded
+
+```{r discipline-vs-ga}
+renderPlot({
+  squads |>
+    ggplot(aes(x = discipline_score, y = g_a, color = league)) +
+    geom_point(size = 2, alpha = 0.8) +
+    geom_smooth(method = "lm", se = FALSE) +
+    labs(
+      title = "Discipline Score vs Goals Conceded",
+      x = "Discipline Score",
+      y = "Goals Conceded"
+    ) +
+    theme_bw()
 })
 ```
 
