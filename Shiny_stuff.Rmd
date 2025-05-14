@@ -136,7 +136,8 @@ renderPlot({
 					 y = "Goals",
 					 color = "League",
 					 shape = "League") +
-			scale_color_colorblind()
+			scale_color_colorblind() +
+    theme_bw()
 })
 ```
 
@@ -158,30 +159,7 @@ renderPlot({
       color = "League"
     ) +
     scale_color_colorblind() +
-    theme_minimal()
-})
-```
-
-Column {data-width=400}
--------------------------
-
-### Top 5 Teams by Goals per Game
-
-```{r Top Teams Goals per Game}
-renderPlot({
-	squads |>
-		group_by(league) |> 
-		slice_max(goals_per_game, n = 5) |> 
-		ggplot() +
-			geom_col(aes(x = fct_reorder(squad, goals_per_game),
-									 y = goals_per_game,
-									 fill = league)) +
-			labs(title = "Top 5 Teams by Goals per Game by League",
-					 x = "Squad",
-					 y = "Goals per Game",
-					 fill = "League") +
-			coord_flip() +
-			scale_fill_colorblind()
+    theme_bw()
 })
 ```
 
@@ -202,6 +180,28 @@ renderPlot({
       y = "Goals Conceded"
     ) +
     theme_bw()
+})
+```
+
+Column {data-width = 1200}
+-------------------------
+
+### Top 5 Teams by Goals per Game
+
+```{r Top Teams Goals per Game}
+renderPlot({
+	squads |>
+		group_by(league) |> 
+		slice_max(goals_per_game, n = 5) |> 
+		ggplot() +
+			geom_col(aes(x = fct_reorder(squad, goals_per_game),
+									 y = goals_per_game,
+									 fill = league)) +
+			labs(title = "Top 5 Teams by Goals per Game by League",
+					 x = "Squad",
+					 y = "Goals per Game",
+					 fill = "League") +
+			scale_fill_colorblind()
 })
 ```
 
