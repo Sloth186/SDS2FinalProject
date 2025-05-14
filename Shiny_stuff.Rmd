@@ -129,7 +129,6 @@ renderPlot({
     geom_point(size = 2, alpha = 0.8) +
     geom_smooth(method = "lm", se = FALSE) +
     labs(
-      title = "Possession vs. Goals by League with Trend Lines",
       x = "Possession (%)",
       y = "Goals",
       color = "League"
@@ -153,8 +152,7 @@ renderPlot({
 			geom_col(aes(x = fct_reorder(squad, goals_per_game),
 									 y = goals_per_game,
 									 fill = league)) +
-			labs(title = "Top 5 Teams by Goals per Game by League",
-					 x = "Squad",
+			labs(x = "Squad",
 					 y = "Goals per Game",
 					 fill = "League") +
 			scale_fill_colorblind()
@@ -178,7 +176,6 @@ renderPlot({
     geom_point(size = 2, alpha = 0.8) +
     geom_smooth(method = "lm", se = FALSE) +
     labs(
-      title = "Discipline Score vs Goals Conceded",
       x = "Discipline Score",
       y = "Goals Conceded"
     ) +
@@ -195,13 +192,12 @@ Column {data-width=400}
 renderPlot({
   standings |>
     mutate(ga_per_game = GA / MP) |>
-    ggplot(aes(x = ga_per_game, y = Pts, color = league, shapes = league)) +
+    ggplot(aes(x = ga_per_game, y = Pts, color = league, shape = league)) +
     geom_point(size = 2, alpha = 0.7) +
     geom_smooth(method = "lm", se = FALSE) +
     scale_size_area(max_size = 15) +
     scale_color_colorblind() +
     labs(
-      title = "Goals Conceded per game vs League Points",
       x     = "Goals Against per game",
       y     = "League Points",
       color = "League"
