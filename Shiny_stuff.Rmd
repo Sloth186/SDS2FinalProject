@@ -112,7 +112,8 @@ renderPlot({
 					 y = "Goals",
 					 color = "League",
 					 shape = "League") +
-			scale_color_colorblind()
+			scale_color_colorblind() +
+    theme_bw()
 })
 ```
 
@@ -134,11 +135,11 @@ renderPlot({
       color = "League"
     ) +
     scale_color_colorblind() +
-    theme_minimal()
+    theme_bw()
 })
 ```
 
-Column {data-width=400}
+Column {data-width = 400}
 -------------------------
 
 ### Top 5 Teams by Goals per Game
@@ -156,10 +157,14 @@ renderPlot({
 					 x = "Squad",
 					 y = "Goals per Game",
 					 fill = "League") +
-			coord_flip() +
 			scale_fill_colorblind()
 })
 ```
+
+---
+
+Defensive Stats 
+==========================
 
 Column {data-width=400}
 -------------------------
@@ -180,8 +185,6 @@ renderPlot({
     theme_bw()
 })
 ```
-
----
 
 Performance
 ==========================
