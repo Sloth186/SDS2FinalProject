@@ -210,6 +210,30 @@ renderPlot({
 })
 ```
 
+Column {data-width=400}
+-------------------------
+
+### Goals Conceded per game vs League Points
+
+```{r defense-performance}
+renderPlot({
+  standings |>
+    mutate(ga_per_game = GA / MP) |>
+    ggplot(aes(x = ga_per_game, y = Pts, color = league, shapes = league)) +
+    geom_point(size = 2, alpha = 0.7) +
+    geom_smooth(method = "lm", se = FALSE) +
+    scale_size_area(max_size = 15) +
+    scale_color_colorblind() +
+    labs(
+      title = "Goals Conceded per game vs League Points",
+      x     = "Goals Against per game",
+      y     = "League Points",
+      color = "League"
+    ) +
+    theme_bw()
+})
+```
+
 Performance
 ==========================
 
