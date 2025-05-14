@@ -7,6 +7,7 @@ editor_options:
 
 ```{r Libraries}
 library(dplyr)
+library(DT)
 library(ggthemes)
 library(janitor)
 library(polite)
@@ -113,7 +114,7 @@ scrape_fbref_table <-
 ```{r Scrape Squad Standard Stats}
 # Map each league's url number and table of interest to the scrape function
 # then bind all resulting tables' rows together into a single tibble
-squads <- bind_rows(
+squads_binded <- bind_rows(
 	pmap(
 		list(squad_leagues$url_number, squad_leagues$table_num),
 		scrape_fbref_table
@@ -125,7 +126,7 @@ squads <- bind_rows(
 
 ```{r Squad Standard Stats Augmentation}
 # Calculate some extra variables
-squads <- squads |> 
+squads <- squads_binded |> 
 	mutate(goals_per_game = gls / mp,
 				 assist_rate = ast / gls,
 				 discipline_score = crd_y + 2 * crd_r,
@@ -134,13 +135,20 @@ squads <- squads |>
 
 ```{r Scrape Standings Stats}
 # Same deal as squads but for standings instead
-standings <- bind_rows(
+standings_binded <- bind_rows(
 	pmap(
 		list(standings_leagues$url_number, standings_leagues$table_num, replicate(6, 15), replicate(6, 3)),
 		scrape_fbref_table
 	),
 	.id = "league"
 ) |> mutate(league = standings_leagues$league[as.integer(league)])
+```
+
+```{r Standings Stats Augmentation}
+standings <- standings_binded |>
+	mutate(`Top Team Scorer Goals` = str_extract(`Top Team Scorer`, "^.* - (\\d{1,2})$", 1),
+				 `Top Team Scorer` = str_extract(`Top Team Scorer`, "^(.*) - \\d{1,2}$", 1)) |>
+	relocate(`Top Team Scorer Goals`, .after = `Top Team Scorer`)
 ```
 
 ```{r Avg Age vs Goals}
@@ -180,5 +188,11 @@ squads |>
 		fill = "League") +
 		coord_flip() +
 		scale_fill_colorblind()
+```
+
+```{r}
+DT::datatable(standings, options = list(
+	pageLength = 10
+))
 ```
 
