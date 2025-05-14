@@ -87,10 +87,25 @@ renderImage({
 Standings 
 ==========================
 
-Column {data-width = 200}
+```{r}
+DT::renderDataTable({
+	DT::datatable(standings, options = list(
+			pageLength = 5,
+			lengthMenu = list(c(5, 10, 20, 40, -1), c("5", "10", "20", "40", "All"))
+	), rownames = FALSE)
+})
+```
+
+---
+
+Attacking Stats 
+==========================
+
+Column {data-width = 400}
 -------------------------
 
 ### Average Age vs. Goals
+
 ```{r Avg Age vs Goals}
 renderPlot({
 	squads |> 
@@ -109,6 +124,7 @@ Column {data-width=400}
 -------------------------
 
 ### Possession vs. Goals by League
+
 ```{r Possession vs Goals}
 renderPlot({
 	squads |> 
@@ -126,6 +142,7 @@ Column {data-width=400}
 -------------------------
 
 ### Top 5 Teams by Goals per Game
+
 ```{r Top Teams Goals per Game}
 renderPlot({
 	squads |>
@@ -145,13 +162,6 @@ renderPlot({
 ```
 
 ---
-
-Attacking Stats 
-==========================
-
-Column {data-width = 200}
--------------------------
-
 
 Conclusion 
 ==========================
