@@ -6,6 +6,7 @@ output:
       version: 4
       bootswatch: journal    
     vertical_layout: fill
+    source_code: "https://github.com/Sloth186/SDS2FinalProject"
 runtime: shiny
 ---
   
@@ -94,10 +95,10 @@ DT::renderDataTable({
 
 ---
 
-Attacking Stats 
+Attacking Stats
 ==========================
 
-Column {data-width = 400}
+{data-width = 400} {.tabset}
 -------------------------
 
 ### Average Age vs. Goals
@@ -106,7 +107,7 @@ Column {data-width = 400}
 renderPlot({
 	squads |> 
 		ggplot(aes(x = age, y = gls, color = league)) +
-			geom_point(aes(shape = league), size = 3, show.legend = F) +
+			geom_point(aes(shape = league), size = 3) +
 			geom_smooth(se = F, method = "lm", show.legend = F) +
 			labs(x = "Average Age",
 					 y = "Goals",
@@ -114,12 +115,10 @@ renderPlot({
 					 shape = "League") +
 			scale_color_colorblind() +
     	theme_bw() +
-			theme(legend.position = "top")
+		  theme(axis.title = element_text(size = 15),
+		  			axis.text = element_text(size = 12))
 })
 ```
-
-Column {data-width=400}
--------------------------
 
 ### Possession vs. Goals by League
 
@@ -127,18 +126,17 @@ Column {data-width=400}
 renderPlot({
   squads |>
     ggplot(aes(x = poss, y = gls, color = league)) +
-	    geom_point(aes(shape = league), size = 2, alpha = 0.8, show.legend = F) +
+	    geom_point(aes(shape = league), size = 2, alpha = 0.8) +
 	    geom_smooth(method = "lm", se = FALSE, show.legend = F) +
 	    labs(x = "Possession (%)",
 	    		 y = "Goals",
 	    		 color = "League") +
 	    scale_color_colorblind() +
-	    theme_bw()
+	    theme_bw() +
+		  theme(axis.title = element_text(size = 15),
+		  			axis.text = element_text(size = 12))
 })
 ```
-
-Column {data-width = 400}
--------------------------
 
 ### Top 5 Teams by Goals per Game
 
@@ -155,9 +153,30 @@ renderPlot({
 					 y = "Goals per Game",
 					 fill = "League") +
 			coord_flip() +
-			scale_fill_colorblind()
+			scale_fill_colorblind() +
+		  theme(axis.title = element_text(size = 15),
+		  			axis.text = element_text(size = 12))
 })
 ```
+
+#### Text for Top 5 Teams by Goals per Game
+
+Lorem ipmus dolor
+
+{data-width = 400} {.tabset}
+---------------------------
+
+### Analysis 1
+
+Lorem
+
+### Analysis 2
+
+ipmus
+
+### Analysis 3
+
+dolor
 
 ---
 
