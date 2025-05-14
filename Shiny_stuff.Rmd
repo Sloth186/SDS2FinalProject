@@ -113,10 +113,10 @@ Column {data-width = 400}
 ```{r Avg Age vs Goals}
 renderPlot({
 	squads |> 
-		ggplot() +
-			geom_point(aes(x = age, y = gls, color = league, shape = league), size = 3) +
-			labs(title = "Team Average Age vs. Goals by League",
-					 x = "Average Age",
+		ggplot(aes(x = age, y = gls, color = league)) +
+			geom_point(aes(shape = league), size = 3) +
+			geom_smooth(se = F, method = "lm", show.legend = F) +
+			labs(x = "Average Age",
 					 y = "Goals",
 					 color = "League",
 					 shape = "League") +

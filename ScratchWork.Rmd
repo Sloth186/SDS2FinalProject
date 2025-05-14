@@ -197,3 +197,25 @@ squads |>
 		coord_flip() +
 		scale_fill_colorblind()
 ```
+
+```{r}
+standings |> 
+	mutate(Squad = fct_reorder(Squad, GF),
+				 GFD = GF - xG,
+				 GAD = xGA - GA,
+				 GFP = ifelse(GFD < 0, 5,
+				 			 ifelse(GFD == 0, 6, 1)),
+				 GFP = as.factor(GFP),
+				 GAP = ifelse(GAD < 0, 5,
+				 			 ifelse(GAD == 0, 6, 1)),
+				 GAP = as.factor(GAP)) |> 
+	ggplot(aes(x = Squad)) +
+		geom_point(aes(y = xG), color = "skyblue") +
+		geom_segment(aes(y = xG, yend = GF, linetype = GFP), lineend = "butt", linejoin = "round", arrow = arrow(length = unit(0.2, "cm"), type = "closed"), size = 1, color = "skyblue") +
+		geom_point(aes(y = xGA), color = "maroon") +
+		geom_segment(aes(y = xGA, yend = GA, linetype = GAP), lineend = "butt", linejoin = "round", arrow = arrow(length = unit(0.2, "cm"), type = "closed"), size = 1, color = "maroon") +
+		facet_wrap(~league, scales = "free") +
+		coord_flip() +
+		labs(x = "Squad",
+				 y = "Goals")
+```
