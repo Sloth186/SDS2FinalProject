@@ -69,40 +69,16 @@ These questions open the door for future data visualizations (like scatterplots 
 Column {data-width=600}
 -------------------------
 
-```{r league-image1, echo=FALSE}
+```{r league-image, echo=FALSE}
 renderImage({
   list(
-    src    = "Top_2 .png",
-    alt    = "Top 2 League Logos",
+    src    = "LeaguesCollageBackground1.png",
+    alt    = "Leagues Images",
     width  = 600,
-    height = 200
+    height = 600
   )
 })
 ```
-
-```{r league-image2, echo=FALSE}
-renderImage({
-  list(
-    src    = "Top_4.png",
-    alt    = "Top 4 League Logos",
-    width  = 600,
-    height = 300
-  )
-})
-```
-
-<div style="text-align: center;">
-```{r MLS-image, echo=FALSE}
-renderImage({
-  list(
-    src    = "MLS.png",
-    alt    = "MLS Logo",
-    width  = 300,
-    height = 300
-  )
-})
-```
-</div>
 
 Standings 
 ==========================
