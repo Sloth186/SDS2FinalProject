@@ -163,27 +163,7 @@ renderPlot({
 })
 ```
 
-Column {data-width=400}
--------------------------
-
-### Discipline vs. Goals Conceded
-
-```{r discipline-vs-ga}
-renderPlot({
-  squads |>
-    ggplot(aes(x = discipline_score, y = g_a, color = league)) +
-    geom_point(size = 2, alpha = 0.8) +
-    geom_smooth(method = "lm", se = FALSE) +
-    labs(
-      title = "Discipline Score vs Goals Conceded",
-      x = "Discipline Score",
-      y = "Goals Conceded"
-    ) +
-    theme_bw()
-})
-```
-
-Column {data-width = 1200}
+Column {data-width = 400}
 -------------------------
 
 ### Top 5 Teams by Goals per Game
@@ -206,6 +186,29 @@ renderPlot({
 ```
 
 ---
+
+Defensive Stats 
+==========================
+
+Column {data-width=400}
+-------------------------
+
+### Discipline vs. Goals Conceded
+
+```{r discipline-vs-ga}
+renderPlot({
+  squads |>
+    ggplot(aes(x = discipline_score, y = g_a, color = league)) +
+    geom_point(size = 2, alpha = 0.8) +
+    geom_smooth(method = "lm", se = FALSE) +
+    labs(
+      title = "Discipline Score vs Goals Conceded",
+      x = "Discipline Score",
+      y = "Goals Conceded"
+    ) +
+    theme_bw()
+})
+```
 
 Performance
 ==========================
