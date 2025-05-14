@@ -75,50 +75,56 @@ Column {data-width = 200}
 -------------------------
 
 ### Average Age vs. Goals
-```{r Avg_Age_vs_Goals}
+```{r Avg Age vs Goals}
 renderPlot({
-  squads %>%
-    ggplot(aes(x = age, y = gls, color = league, shape = league)) +
-    geom_point(size = 3) +
-    labs(title = "Team Average Age vs. Goals by League",
-         x = "Average Age", y = "Goals") +
-    scale_color_colorblind() +
-    theme_minimal()
+	squads |> 
+		ggplot() +
+			geom_point(aes(x = age, y = gls, color = league, shape = league), size = 3) +
+			labs(title = "Team Average Age vs. Goals by League",
+					 x = "Average Age",
+					 y = "Goals",
+					 color = "League",
+					 shape = "League") +
+			scale_color_colorblind()
 })
 ```
 
 Column {data-width=400}
 -------------------------
+
 ### Possession vs. Goals by League
-```{r Possession_vs_Goals}
+```{r Possession vs Goals}
 renderPlot({
-  squads %>%
-    ggplot(aes(x = poss, y = gls, color = league)) +
-    geom_point(size = 2) +
-    facet_wrap(~ league) +
-    labs(title = "Possession vs. Goals by League",
-         x = "Possession (%)", y = "Goals") +
-    scale_color_colorblind() +
-    theme_minimal()
+	squads |> 
+		ggplot() +
+			geom_point(aes(x = poss, y = gls, color = league), size = 2, show.legend = F) +
+			facet_wrap(~league) +
+			labs(title = "Possession vs. Goals by League",
+					 x = "Possession",
+					 y = "Goals") +
+			scale_color_colorblind()
 })
 ```
 
 Column {data-width=400}
 -------------------------
+
 ### Top 5 Teams by Goals per Game
-```{r Top_Teams_Goals_per_Game}
+```{r Top Teams Goals per Game}
 renderPlot({
-  squads %>%
-    group_by(league) %>%
-    slice_max(goals_per_game, n = 5) %>%
-    ungroup() %>%
-    ggplot(aes(x = fct_reorder(squad, goals_per_game), y = goals_per_game, fill = league)) +
-    geom_col(show.legend = FALSE) +
-    coord_flip() +
-    labs(title = "Top 5 Teams by Goals per Game",
-         x = "Squad", y = "Goals per Game") +
-    scale_fill_colorblind() +
-    theme_minimal()
+	squads |>
+		group_by(league) |> 
+		slice_max(goals_per_game, n = 5) |> 
+		ggplot() +
+			geom_col(aes(x = fct_reorder(squad, goals_per_game),
+									 y = goals_per_game,
+									 fill = league)) +
+			labs(title = "Top 5 Teams by Goals per Game by League",
+					 x = "Squad",
+					 y = "Goals per Game",
+					 fill = "League") +
+			coord_flip() +
+			scale_fill_colorblind()
 })
 ```
 
@@ -129,15 +135,7 @@ Attacking Stats
 
 Column {data-width = 200}
 -------------------------
-```{r}
-renderPlot({
-  squads %>%
-    ggplot(aes(x = poss, y = goals_per_game, color = league)) +
-    geom_point() +
-    labs(title = "Possession vs Goals per Game", x = "Possession (%)", y = "Goals/Game") +
-    theme_minimal()
-})
-```
+
 
 Conclusion 
 ==========================
