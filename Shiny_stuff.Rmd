@@ -209,19 +209,23 @@ Column {data-width=400}
 
 ```{r defense-performance}
 renderPlot({
-  standings |>
-    mutate(ga_per_game = GA / MP) |>
-    ggplot(aes(x = ga_per_game, y = Pts, color = league, shape = league)) +
-    geom_point(size = 2, alpha = 0.7) +
-    geom_smooth(method = "lm", se = FALSE) +
-    scale_size_area(max_size = 15) +
-    scale_color_colorblind() +
-    labs(
-      x     = "Goals Against per game",
-      y     = "League Points",
-      color = "League"
-    ) +
-    theme_bw()
+standings |>
+  mutate(ga_per_game = GA / MP) |>
+  ggplot(aes(
+    x     = ga_per_game,
+    y     = Pts,
+    color = league,
+    shape = league    
+  )) +
+  geom_point(size = 2, alpha = 0.7) +
+  geom_smooth(method = "lm", se = FALSE) +
+  scale_color_colorblind(name = "League") +   
+  scale_shape_discrete(name = "League") +   
+  labs(
+    x = "Goals Against per Game",
+    y = "League Points"
+  ) +
+  theme_bw()
 })
 ```
 
