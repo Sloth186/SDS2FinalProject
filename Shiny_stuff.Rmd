@@ -176,9 +176,31 @@ renderPlot({
     geom_point(size = 2, alpha = 0.8) +
     geom_smooth(method = "lm", se = FALSE) +
     labs(
-      title = "Discipline Score vs Goals Conceded",
       x = "Discipline Score",
       y = "Goals Conceded"
+    ) +
+    theme_bw()
+})
+```
+
+Column {data-width=400}
+-------------------------
+
+### Goals Conceded per game vs League Points
+
+```{r defense-performance}
+renderPlot({
+  standings |>
+    mutate(ga_per_game = GA / MP) |>
+    ggplot(aes(x = ga_per_game, y = Pts, color = league, shape = league)) +
+    geom_point(size = 2, alpha = 0.7) +
+    geom_smooth(method = "lm", se = FALSE) +
+    scale_size_area(max_size = 15) +
+    scale_color_colorblind() +
+    labs(
+      x     = "Goals Against per game",
+      y     = "League Points",
+      color = "League"
     ) +
     theme_bw()
 })
