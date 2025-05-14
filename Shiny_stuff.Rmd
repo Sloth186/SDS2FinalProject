@@ -62,6 +62,7 @@ By scraping the same type of statistics from each league, we aimed to answer que
 - Do teams with a higher discipline score tend to have fewer goals conceded? 
 - Have teams overperformed or underperformed according to the expected stats?  
 - Do possession-heavy teams always score more? 
+- Do teams that focus on defending and conceding fewer goals do better in their respective leagues? 
 
 
 These questions open the door for future data visualizations (like scatterplots or heatmaps) and statistical modeling (e.g., regression of goals on age or possession).
