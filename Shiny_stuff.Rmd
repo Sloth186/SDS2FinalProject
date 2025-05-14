@@ -106,14 +106,15 @@ Column {data-width = 400}
 renderPlot({
 	squads |> 
 		ggplot(aes(x = age, y = gls, color = league)) +
-			geom_point(aes(shape = league), size = 3) +
+			geom_point(aes(shape = league), size = 3, show.legend = F) +
 			geom_smooth(se = F, method = "lm", show.legend = F) +
 			labs(x = "Average Age",
 					 y = "Goals",
 					 color = "League",
 					 shape = "League") +
 			scale_color_colorblind() +
-    theme_bw()
+    	theme_bw() +
+			theme(legend.position = "top")
 })
 ```
 
@@ -126,16 +127,13 @@ Column {data-width=400}
 renderPlot({
   squads |>
     ggplot(aes(x = poss, y = gls, color = league)) +
-    geom_point(size = 2, alpha = 0.8) +
-    geom_smooth(method = "lm", se = FALSE) +
-    labs(
-      title = "Possession vs. Goals by League with Trend Lines",
-      x = "Possession (%)",
-      y = "Goals",
-      color = "League"
-    ) +
-    scale_color_colorblind() +
-    theme_bw()
+	    geom_point(aes(shape = league), size = 2, alpha = 0.8, show.legend = F) +
+	    geom_smooth(method = "lm", se = FALSE, show.legend = F) +
+	    labs(x = "Possession (%)",
+	    		 y = "Goals",
+	    		 color = "League") +
+	    scale_color_colorblind() +
+	    theme_bw()
 })
 ```
 
@@ -153,10 +151,10 @@ renderPlot({
 			geom_col(aes(x = fct_reorder(squad, goals_per_game),
 									 y = goals_per_game,
 									 fill = league)) +
-			labs(title = "Top 5 Teams by Goals per Game by League",
-					 x = "Squad",
+			labs(x = "Squad",
 					 y = "Goals per Game",
 					 fill = "League") +
+			coord_flip() +
 			scale_fill_colorblind()
 })
 ```
