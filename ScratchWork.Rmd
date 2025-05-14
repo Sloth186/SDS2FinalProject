@@ -151,6 +151,14 @@ standings <- standings_binded |>
 	relocate(`Top Team Scorer Goals`, .after = `Top Team Scorer`)
 ```
 
+```{r}
+# Save the augmented squads dataset
+write_csv(squads, "squads.csv")
+
+# Save the scraped standings dataset
+write_csv(standings, "standings.csv")
+```
+
 ```{r Avg Age vs Goals}
 squads |> 
 	ggplot() +
@@ -189,10 +197,3 @@ squads |>
 		coord_flip() +
 		scale_fill_colorblind()
 ```
-
-```{r}
-DT::datatable(standings, options = list(
-	pageLength = 10
-))
-```
-
