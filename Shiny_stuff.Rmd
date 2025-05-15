@@ -48,25 +48,24 @@ Column {data-width=600 .left-align}
 
 #### Introduction
 
-In this project, we explore soccer statistics from multiple professional football leagues using data from FBref (https://fbref.com/en/comps), a trusted site for advanced football analytics. While we initially focused on Major League Soccer (MLS), we extended our analysis to include other major international competitions such as the Premier League, La Liga, Bundesliga, and Serie A.
+This project explores cross-league soccer performance by analyzing standardized squad- and standings-level statistics from five major professional football competitions: Major League Soccer (MLS), Premier League, La Liga, Bundesliga, and Serie A. Using data scraped from FBref (https://fbref.com/en/comps), a widely respected source for advanced football analytics, we compiled variables like goals scored, assists, possession percentage, squad age, expected goals (xG), and discipline metrics.
 
-Our goal was to collect and organize standardized squad-level statistics across leagues to support comparative analysis. Specifically, we targeted the "Squad Standard Stats" tables on each competition’s main stats page. These tables contain information on team performance metrics such as matches played, goals, assists, average age, possession %, and more.
+Our goal was not only to centralize these diverse league statistics into one tidy dataset, but also to build an interactive dashboard using R and Shiny to visualize trends, uncover patterns, and compare league and team performance. Throughout the dashboard, users can explore metrics like goals per game, possession efficiency, and defensive discipline through scatterplots, boxplots, and performance arrows—facilitating intuitive comparisons across leagues. 
 
 #### Method
 
-We chose this dataset primarily out of personal interest: one of us enjoys following global football news, while the other is an avid FC25 player. Beyond our curiosity, we recognized that this data offers a rich opportunity for cross-league comparisons.
+We began by scraping the “Squad Standard Stats” and “Standings” tables from each competition’s main stats page on FBref. This required building a modular scraping function using the {polite}, {rvest}, and {purrr} packages to navigate and extract HTML tables, followed by cleaning with {janitor} and {dplyr}. Once we constructed a unified dataset across all five leagues, we created new variables like goals per game, assist rate, and discipline score, along with over/underperformance metrics by comparing actual goals to expected goals (xG/xGA).
 
-By scraping the same type of statistics from each league, we aimed to answer questions such as:
+While our initial interest stemmed from personal engagement with soccer (one of us is an FC25 player, the other a league follower), our investigation evolved to address broader questions: 
 
 - Do older squads tend to score more goals, or is it the opposite? 
-- Which leagues exhibit the highest goal efficiency? 
-- Do teams with a higher discipline score tend to have fewer goals conceded? 
-- Have teams overperformed or underperformed according to the expected stats?  
-- Do possession-heavy teams always score more? 
-- Do teams that focus on defending and conceding fewer goals do better in their respective leagues? 
+- Does higher possession actually result in more goals?
+- Which leagues have the most efficient offenses?
+- Is discipline associated with better defensive outcomes?
+- Are low GA teams more likely to finish higher in the standings?
+- How often do teams overperform or underperform expected stats like xG or xGA?
 
-
-These questions open the door for future data visualizations (like scatterplots or heatmaps) and statistical modeling (e.g., regression of goals on age or possession).
+These guiding questions informed the structure of our dashboard tabs, organized around attacking stats, defensive metrics, expected vs actual outcomes, and league standings with embedded visual commentary and linked interpretations.
 
 Column {data-width=600}
 -------------------------
@@ -87,10 +86,41 @@ Standings
 
 ```{r}
 DT::renderDataTable({
-	DT::datatable(standings, options = list(
-			pageLength = 5,
-			lengthMenu = list(c(5, 10, 20, 40, -1), c("5", "10", "20", "40", "All"))
-	), rownames = FALSE)
+  standings |>
+    select(
+      League               = league,
+      Rank                 = Rk,
+      Team                 = Squad,
+      Matches              = MP,
+      Wins                 = W,
+      Draws                = D,
+      Losses               = L,
+      `Goals For`          = GF,
+      `Goals Against`      = GA,
+      `Goal Diff`          = GD,
+      Points               = Pts,
+      xG, xGA, xGD,
+      `xGD/90`             = `xGD/90`,
+      `Last 5`             = `Last 5`,
+      Attendance,
+      `Top Team Scorer`    = `Top Team Scorer`,
+      `Top Team Scorer Goals` = `Top Team Scorer Goals`,
+      Goalkeeper
+    ) |>
+    DT::datatable(
+      options = list(
+        scrollX = TRUE,
+        pageLength = 5,
+        lengthMenu = list(c(5, 10, 20, -1), c("5", "10", "20", "40", "All")),
+        autoWidth = TRUE,
+        fixedHeader = TRUE,
+        columnDefs = list(
+          list(className = 'dt-right', targets = c(3:16)) 
+        )
+      ),
+      class = "stripe hover compact",
+      rownames = FALSE
+    )
 })
 ```
 
@@ -123,9 +153,16 @@ renderPlot({
 })
 ```
 
-### Age Doesn't Matter?
+### Age vs. Offensive Output: Does Experience Equal Goals?
 
-Lorem ipsum dolor
+The scatterplot visualizes the relationship between a team’s average age and their total goals scored, grouped by league. Each league is represented with a distinct shape and color, and trend lines fitted with linear regression show differing patterns:
+
+- In Serie A, there appears to be a positive relationship: older squads tend to score more goals.
+- In contrast, La Liga and Bundesliga show a slight negative trend, suggesting that younger squads may be more offensively productive.
+- MLS has little to no correlation, with low goal totals regardless of age.
+- Premier League shows a mostly flat trend, indicating no clear relationship.
+
+This plot suggests that the relationship between age and goal scoring is not universal, but league-dependent, possibly due to differences in play style, physical demands, or strategic emphasis.
 
 Column
 -------------------------
@@ -149,9 +186,9 @@ renderPlot({
 })
 ```
 
-### Possession Does Matter!
+### Possession vs. Productivity: Does Dominating the Ball Lead to More Goals?
 
-Lorem ipsum dolor possession
+This plot investigates whether teams that dominate possession are more successful in terms of goal scoring. The positive trends shown in each league suggest a strong correlation between possession percentage and total goals scored. Leagues like the Bundesliga and Premier League display a steeper slope, indicating that teams with greater possession tend to score significantly more. However, MLS exhibits a flatter trend line, suggesting that possession may not be as tightly linked to goal production in that league. Overall, while possession appears to be a useful offensive strategy, its impact varies depending on the league context.
 
 Column
 -------------------------
@@ -160,27 +197,27 @@ Column
 
 ```{r Top Teams Goals per Game}
 renderPlot({
-	squads |>
-		group_by(league) |> 
-		slice_max(goals_per_game, n = 5) |> 
-		ggplot() +
-			geom_col(aes(x = fct_reorder(squad, goals_per_game),
-									 y = goals_per_game,
-									 fill = league),
-							 show.legend = F) +
-			labs(x = "Squad",
-					 y = "Goals per Game",
-					 fill = "League") +
-			coord_flip() +
-			scale_fill_colorblind() +
-		  theme(axis.title = element_text(size = 15),
-		  			axis.text = element_text(size = 12))
+squads |>
+  group_by(league) |> 
+  slice_max(goals_per_game, n = 5) |> 
+  ungroup() |> 
+  ggplot(aes(x = fct_reorder(squad, goals_per_game), y = goals_per_game, fill = league)) +
+  geom_col(width = 0.7, color = "black", alpha = 0.9, show.legend = F) +
+  coord_flip() +
+  scale_fill_colorblind() +
+  labs(
+    x = NULL,
+    y = "Goals per Game"
+  ) +
+  theme_bw() 
 })
 ```
 
-### Team Info Stuff
+### Who Leads in Scoring Efficiency?
 
-Yaddyada weee
+This bar chart displays the top five teams in each league ranked by their average goals per game. Bayern Munich and Barcelona clearly lead the pack, scoring at a much higher rate than their peers. Interestingly, several MLS teams like SJ Earthquakes and San Diego FC also make the list, despite lower overall scoring averages across the league.
+
+By focusing on goals per match, this visualization highlights not only league-level trends in attacking efficiency but also showcases standout squads regardless of league reputation. It supports our core research question: Which leagues and teams exhibit the highest scoring efficiency?
 
 Defensive Stats 
 ==========================
@@ -210,9 +247,13 @@ renderPlot({
 })
 ```
 
-### Keep yourself disciplined!
+### Do Disciplined Teams Concede Fewer Goals?
 
-Here is some good ole wisdom about being disciplined
+This scatterplot investigates the relationship between a team's discipline score and the number of goals they concede. A higher discipline score indicates more yellow and red cards accumulated, while the vertical axis measures goals allowed.
+
+Overall, the trend lines across leagues suggest a moderate negative correlation: teams with higher discipline scores (more cards) generally tend to concede fewer goals. Notably, MLS teams (light blue) show a tight cluster with both low discipline scores and low goals conceded, suggesting a distinct pattern in that league.
+
+This visualization supports the research question: Do teams with a higher discipline score tend to have fewer goals conceded? While correlation is not causation, the trend invites deeper inquiry into how defensive aggression and organization impact team performance.
 
 Column {data-width=400}
 -------------------------
@@ -229,8 +270,8 @@ renderPlot({
 	    color = league,
 	    shape = league    
 	  )) +
-		  geom_point(size = 2, alpha = 0.7, show.legend = F) +
-		  geom_smooth(method = "lm", se = FALSE, show.legend = F) +
+		  geom_point(size = 2, alpha = 0.7) +
+		  geom_smooth(method = "lm", se = FALSE) +
 		  scale_color_colorblind(name = "League") +   
 		  scale_shape_discrete(name = "League") +   
 		  labs(
@@ -243,9 +284,15 @@ renderPlot({
 })
 ```
 
-### Don't Concede Those Goals
+### Defense Wins Titles: The Fewer You Concede, the More You Lead
 
-Filler text filler text fillerrrrrrrrr
+This plot investigates how defensive performance, measured as goals conceded per game, correlates with league point totals, while now distinguishing between MLS East and MLS West divisions alongside other leagues.
+
+The trend remains clear across the board: teams that concede fewer goals per game generally achieve more league points. European leagues, especially the Serie A league show a steep negative slope, reinforcing the idea that strong defense is pivotal to climbing the league table.
+
+Interestingly, while MLS is now split into East and West divisions, both show much flatter trends compared to their European counterparts, suggesting that parity across teams or differing tactical priorities in MLS may dampen the defensive impact on point accumulation.
+
+This visualization underscores a classic football principle: limiting goals against is often the foundation for success, particularly in highly competitive leagues. 
 
 Performance
 ==========================
@@ -290,9 +337,23 @@ renderPlot({
 })
 ```
 
-### Some Dang Good Performance Out There
+### Overachievers & Underachievers: Expected vs Actual Goals Across Leagues
 
-Underperformers? Never heard of them. Everyone overperformed!
+This plot compares each team's expected vs. actual performance in terms of Goals For (xG, in blue) and Goals Against (xGA, in red) across the six major football leagues, ordered by actual league ranking (top to bottom) for each panel. Each horizontal segment represents the difference between a team's actual and expected stat in either direction:
+
+- Blue arrows reflect differences between expected goals (xG) and actual goals scored (GF) — the offensive side.
+- Red arrows reflect differences between expected goals against (xGA) and actual goals conceded (GA) — the defensive side.
+- A solid line means the team overperformed that metric (scored more than expected or conceded fewer goals than expected).
+- A dotted line indicates underperformance (fewer goals scored than expected or more goals conceded than expected).
+
+Key insights:
+
+- Barcelona and Liverpool show strong offensive overperformance, with blue arrows pointing far to the right.
+- Defensively, some teams like NE Revolution and FC Cincinnati appear to have conceded fewer goals than expected, indicated by solid red lines pointing left.
+- On the other hand, teams like Valladolid and D.C. United underperformed both offensively and defensively, with both arrows appearing as dotted lines.
+- This plot provides a dual-lens view of efficiency and resilience, helping us spot teams that either maximize chances or struggle to match their expected performance, offering a comprehensive look at both attack and defense.
+
+Because teams are listed from best to worst based on actual standings, the plot allows us to quickly see which top-ranking teams are overachieving, and which are possibly getting lucky or unlucky. This side-by-side view by league adds valuable context, showing how performance gaps relate not just to stats, but to actual success in the table.
 
 Conclusion 
 ==========================
@@ -300,16 +361,38 @@ Conclusion
 Column {data-width = 200}
 -------------------------
 
-## Takeaways
+Through our cross-league soccer analysis, we addressed several key questions using standardized team-level data from five major professional leagues. By comparing squad age, possession, goals, discipline, and expected stats across leagues, we uncovered consistent trends and notable league differences:
 
-- Older squads often correlate with higher scoring efficiency.  
-- Possession percentage has a variable relationship with goals.  
-- Top-performing teams consistently outscore their league averages.
+### Insights and Answers:
 
-## Next Steps
+- Do older squads tend to score more goals?
 
-1. Build regression models per league.  
-2. Incorporate expected goals (xG).  
-3. Add time-series analysis across seasons.
+Our analysis showed a weak but positive trend in some leagues (Serie A), suggesting that experience may contribute to attacking efficiency. However, this relationship was not universal, MLS in particular, showed little correlation between age and goals scored.
+
+- Do possession-heavy teams always score more?
+
+A strong positive correlation between possession and goals existed across most leagues, affirming the offensive value of ball control. However, MLS again diverged from this trend, with many teams showing high possession but low goal output.
+
+- Which leagues exhibit the highest goal efficiency?
+
+By examining average goals per game across teams, we found that Bundesliga and La Liga clubs such as Bayern Munich and Barcelona topped the list in scoring efficiency. Notably, a few MLS teams like SJ Earthquakes and San Diego FC also ranked highly, despite the league’s overall lower goal averages. 
+
+- Do teams with higher discipline scores concede fewer goals?
+
+We found a moderate negative relationship, particularly in European leagues,  where teams with more discipline score (more yellow/red cards) generally conceded fewer goals. MLS teams were less consistent in this pattern.
+
+- Do defensively strong teams earn more league points?
+
+A clear negative relationship between goals conceded and league points confirmed that teams with tighter defenses generally finished higher in the standings, especially in the European leagues.
+
+- Have teams overperformed or underperformed relative to expected stats?
+
+By mapping xG vs GF and xGA vs GA, we clearly identified overachievers (Philadelphia Union, Barcelona) and underachievers (D.C. United, CF Montréal). These differences often aligned with league position, highlighting the value of expected metrics in evaluating true performance.
+
+### What We Gained
+
+This project enhanced our understanding of how team characteristics like age, discipline, and tactical control (possession) relate to success across different footballing cultures. While some trends held across all leagues, others revealed unique patterns, particularly in MLS, underscoring the importance of league context in data interpretation.
+
+Moving forward, incorporating player-level data, game-level trends, and multi-season time series will deepen our insights and improve model accuracy. This foundational work sets the stage for more advanced predictive modeling in soccer analytics.
 
 
